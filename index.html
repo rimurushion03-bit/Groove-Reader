@@ -344,59 +344,48 @@
             transition: opacity 0.3s ease, transform 0.3s ease;
         }
 
-        /* ===== DRAG & DROP OVERLAY ===== */
-        #drop-overlay {
-            display: none; position: fixed; inset: 0; z-index: 9000;
-            background: rgba(26,36,33,0.92);
-            align-items: center; justify-content: center;
-            flex-direction: column; gap: 16px;
-            pointer-events: none;
-        }
-        #drop-overlay.active {
-            display: flex;
-            pointer-events: auto;
-        }
-        .drop-icon  { font-size: 72px; animation: dropBounce 0.7s ease infinite alternate; }
-        @keyframes dropBounce {
-            from { transform: translateY(0); }
-            to   { transform: translateY(-12px); }
-        }
-        .drop-title {
-            font-family: 'Playfair Display', serif; font-size: 26px;
-            color: var(--leaf); font-weight: 700;
-        }
-        .drop-sub { font-size: 14px; color: var(--ivory-dim); }
-        .drop-border {
-            position: fixed; inset: 16px; border-radius: 20px;
-            border: 3px dashed var(--leaf);
-            pointer-events: none;
-            animation: dropPulse 1.2s ease infinite alternate;
-        }
-        @keyframes dropPulse {
-            from { border-color: var(--leaf); box-shadow: 0 0 0 0 rgba(142,182,149,0); }
-            to   { border-color: var(--leaf-light); box-shadow: 0 0 24px 4px rgba(142,182,149,0.15); }
-        }
-
+        
         .viewer-header {
-            display: flex; align-items: center; padding: 50px 16px 12px; gap: 12px;
+            display: flex; align-items: center; padding: 50px 10px 10px; gap: 6px;
             background: rgba(26,36,33,0.97); backdrop-filter: blur(10px);
             border-bottom: 1px solid rgba(142,182,149,0.12); flex-shrink: 0;
         }
         .back-button {
-            width: 36px; height: 36px; border-radius: 50%;
+            width: 34px; height: 34px; border-radius: 50%;
             background: var(--forest-card); border: 1px solid rgba(142,182,149,0.2);
             color: var(--leaf); font-size: 18px; cursor: pointer;
             display: flex; align-items: center; justify-content: center; flex-shrink: 0;
         }
         .viewer-title {
-            font-size: 14px; font-weight: 500; flex: 1;
+            font-size: 13px; font-weight: 500; flex: 1;
             overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
         }
-        .viewer-page-info { font-size: 12px; color: var(--ivory-dim); flex-shrink: 0; }
-        .reader-settings-btn { background: none; border: none; color: var(--ivory-dim); font-size: 20px; cursor: pointer; padding: 4px; }
+        .viewer-page-info { font-size: 11px; color: var(--ivory-dim); flex-shrink: 0; }
+        .reader-settings-btn { background: none; border: none; color: var(--ivory-dim); font-size: 19px; cursor: pointer; padding: 3px; flex-shrink: 0; }
         .reader-settings-btn:hover { color: var(--ivory); }
         #fullscreen-btn { transition: transform 0.2s; }
         #fullscreen-btn:hover { transform: scale(1.15); }
+
+        /* Overflow menu untuk layar sempit */
+        #reader-overflow-btn { display: none; }
+        #reader-overflow-menu {
+            display: none; position: absolute; top: 100%; right: 10px;
+            background: var(--forest-light); border: 1px solid rgba(142,182,149,0.2);
+            border-radius: 12px; padding: 8px; z-index: 50;
+            box-shadow: 0 8px 24px rgba(0,0,0,0.4); flex-direction: column; gap: 2px; min-width: 160px;
+        }
+        #reader-overflow-menu.open { display: flex; }
+        .overflow-menu-item {
+            display: flex; align-items: center; gap: 10px;
+            padding: 10px 12px; border-radius: 8px; cursor: pointer;
+            font-size: 13px; color: var(--ivory); transition: background 0.15s;
+        }
+        .overflow-menu-item:hover { background: rgba(142,182,149,0.1); }
+        .overflow-menu-item span:first-child { font-size: 17px; width: 20px; text-align: center; }
+        @media (max-width: 380px) {
+            #reader-overflow-btn { display: block; }
+            #translate-btn, #fullscreen-btn, #bookmark-btn, .reader-settings-btn:last-of-type { display: none; }
+        }
 
         #viewer-content { flex: 1; overflow: hidden; position: relative; }
         #pdf-viewer-content { width: 100%; height: 100%; overflow: auto; }
@@ -437,9 +426,15 @@
         #settings-panel {
             display: none; position: absolute; bottom: 0; right: 0; left: 0;
             background: var(--forest-light); border-top: 1px solid rgba(142,182,149,0.2);
-            padding: 20px; z-index: 20;
+            padding: 20px; z-index: 20; border-radius: 20px 20px 0 0;
+            box-shadow: 0 -8px 32px rgba(0,0,0,0.4);
         }
         #settings-panel.visible { display: block; }
+        #settings-backdrop {
+            display: none; position: absolute; inset: 0; z-index: 19;
+            background: rgba(0,0,0,0.35);
+        }
+        #settings-backdrop.visible { display: block; }
         .settings-panel-title { font-family: 'Playfair Display', serif; font-size: 16px; color: var(--leaf); margin-bottom: 14px; }
         .settings-row { margin-bottom: 14px; }
         .settings-label { font-size: 11px; color: var(--ivory-dim); margin-bottom: 6px; }
@@ -911,6 +906,142 @@
         .toc-item.toc-h3 { padding-left: 44px; font-size: 11px; color: var(--ivory-dim); }
         .toc-item.active  { border-left-color: var(--leaf); color: var(--leaf-light); background: rgba(142,182,149,0.08); }
         .toc-empty { padding: 20px; font-size: 13px; color: var(--ivory-dim); text-align: center; }
+
+        /* ===== TRANSLATE VIEWER (fullscreen) ===== */
+        #translate-viewer {
+            display: none; position: fixed; inset: 0; z-index: 3000;
+            background: var(--forest-dark); flex-direction: column;
+        }
+        #translate-viewer.active { display: flex; }
+
+        .translate-viewer-header {
+            display: flex; align-items: center; gap: 10px;
+            padding: 48px 14px 12px;
+            background: rgba(26,36,33,0.97); backdrop-filter: blur(12px);
+            border-bottom: 1px solid rgba(142,182,149,0.15);
+            flex-shrink: 0; flex-wrap: wrap;
+        }
+        .translate-back-btn {
+            background: none; border: none; color: var(--ivory); font-size: 22px;
+            cursor: pointer; padding: 4px; flex-shrink: 0;
+        }
+        .translate-viewer-title {
+            font-family: 'Playfair Display', serif; font-size: 17px; color: var(--leaf);
+            flex: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+        }
+        .translate-lang-select {
+            background: var(--forest-card); border: 1px solid rgba(142,182,149,0.25);
+            color: var(--ivory); border-radius: 8px; padding: 6px 10px;
+            font-family: 'DM Sans', sans-serif; font-size: 12px; outline: none;
+            cursor: pointer; max-width: 130px;
+        }
+        .translate-swap-btn {
+            background: var(--forest-card); border: 1px solid rgba(142,182,149,0.2);
+            color: var(--leaf); border-radius: 50%; width: 32px; height: 32px;
+            font-size: 14px; cursor: pointer; display: flex; align-items: center; justify-content: center;
+            flex-shrink: 0;
+        }
+        .translate-go-btn {
+            background: var(--leaf); color: var(--forest-dark); border: none;
+            border-radius: 8px; padding: 7px 14px; font-family: 'DM Sans', sans-serif;
+            font-size: 13px; font-weight: 600; cursor: pointer; white-space: nowrap;
+        }
+        .translate-go-btn:active { transform: scale(0.96); }
+        .translate-go-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+        /* Scope pills row */
+        .translate-scope-row {
+            display: flex; gap: 8px; padding: 10px 14px;
+            background: var(--forest-dark);
+            border-bottom: 1px solid rgba(142,182,149,0.1);
+            overflow-x: auto; scrollbar-width: none; flex-shrink: 0;
+        }
+        .translate-scope-row::-webkit-scrollbar { display: none; }
+        .translate-scope-btn {
+            padding: 5px 13px; border-radius: 50px; font-size: 11px; font-weight: 500;
+            border: 1px solid rgba(142,182,149,0.25); background: transparent;
+            color: var(--ivory-dim); cursor: pointer; white-space: nowrap; transition: all 0.2s;
+        }
+        .translate-scope-btn.active { background: var(--leaf); border-color: var(--leaf); color: var(--forest-dark); }
+
+        /* Custom textarea scope */
+        #translate-custom-wrap {
+            display: none; padding: 10px 14px;
+            background: var(--forest-dark); border-bottom: 1px solid rgba(142,182,149,0.1);
+            flex-shrink: 0;
+        }
+        #translate-custom-input {
+            width: 100%; background: var(--forest-card);
+            border: 1px solid rgba(142,182,149,0.2); border-radius: 10px;
+            padding: 10px; color: var(--ivory); font-family: 'DM Sans', sans-serif;
+            font-size: 13px; line-height: 1.6; min-height: 70px; resize: vertical;
+            outline: none; box-sizing: border-box;
+        }
+
+        /* Main content area: source | result side by side on wide, stacked on narrow */
+        #translate-body {
+            flex: 1; overflow: hidden; display: flex; flex-direction: column; position: relative;
+        }
+        .translate-panes {
+            flex: 1; display: flex; overflow: hidden;
+        }
+        .translate-pane {
+            flex: 1; display: flex; flex-direction: column; overflow: hidden;
+        }
+        .translate-pane + .translate-pane {
+            border-left: 1px solid rgba(142,182,149,0.12);
+        }
+        .translate-pane-label {
+            padding: 7px 14px; font-size: 10px; font-weight: 600; letter-spacing: 0.1em;
+            color: var(--leaf-dim); text-transform: uppercase; background: var(--forest-mid);
+            flex-shrink: 0; border-bottom: 1px solid rgba(142,182,149,0.1);
+        }
+        .translate-pane-content {
+            flex: 1; overflow-y: auto; padding: 16px 14px;
+            font-size: 14px; line-height: 1.85; white-space: pre-wrap; word-break: break-word;
+        }
+        #translate-source-pane { color: var(--ivory-dim); background: var(--forest-dark); }
+        #translate-result-pane {
+            color: var(--ivory); background: var(--forest-mid);
+            position: relative;
+        }
+
+        /* Progress bar */
+        #translate-progress-wrap {
+            display: none; padding: 6px 14px; background: var(--forest-dark);
+            border-top: 1px solid rgba(142,182,149,0.1); flex-shrink: 0;
+        }
+        #translate-progress-wrap.show { display: flex; align-items: center; gap: 10px; }
+        #translate-progress-bar-outer {
+            flex: 1; height: 4px; background: rgba(255,255,255,0.08);
+            border-radius: 2px; overflow: hidden;
+        }
+        #translate-progress-bar-inner {
+            height: 100%; background: var(--leaf); border-radius: 2px;
+            transition: width 0.3s; width: 0%;
+        }
+        #translate-progress-text {
+            font-size: 11px; color: var(--ivory-dim); white-space: nowrap;
+        }
+
+        /* Footer toolbar */
+        .translate-viewer-footer {
+            display: flex; gap: 8px; padding: 10px 14px;
+            background: rgba(26,36,33,0.97); border-top: 1px solid rgba(142,182,149,0.12);
+            flex-shrink: 0;
+        }
+        .translate-footer-btn {
+            flex: 1; padding: 10px; border-radius: 10px;
+            font-family: 'DM Sans', sans-serif; font-size: 12px; font-weight: 500;
+            border: 1px solid rgba(142,182,149,0.2); background: var(--forest-card);
+            color: var(--ivory); cursor: pointer; text-align: center;
+        }
+        .translate-footer-btn:active { transform: scale(0.97); }
+        #translate-cancel-btn {
+            background: rgba(224,92,92,0.15); border-color: rgba(224,92,92,0.3);
+            color: var(--danger); display: none;
+        }
+        #translate-cancel-btn.show { display: block; }
     </style>
 </head>
 <body>
@@ -925,14 +1056,6 @@
 </div>
 
 <div id="leaves-container"></div>
-
-<!-- Drag & Drop Overlay -->
-<div id="drop-overlay">
-    <div class="drop-border"></div>
-    <div class="drop-icon">📂</div>
-    <div class="drop-title">Lepaskan untuk Menambahkan</div>
-    <div class="drop-sub">PDF · EPUB · Word · Gambar · Teks</div>
-</div>
 
 <!-- Drawer -->
 <div class="drawer-overlay" id="drawer-overlay" onclick="closeDrawer()"></div>
@@ -1080,6 +1203,17 @@
         <div class="easter-egg-emoji">🌿</div>
         <div class="easter-egg-title">Hey, you found me!</div>
         <div class="easter-egg-msg">Grove Reader dibuat dengan penuh cinta untuk para pembaca yang percaya bahwa setiap halaman adalah petualangan baru.<br><br><em style="color:var(--leaf-dim)">"A reader lives a thousand lives before he dies."</em><br><small style="opacity:0.5">— George R.R. Martin</small></div>
+        <div style="font-size:12px;color:var(--ivory-dim);margin-bottom:12px">Btw recehannya tuan 🗿</div>
+        <div style="display:flex;gap:10px;justify-content:center;margin-bottom:16px;flex-wrap:wrap">
+            <a href="https://trakteer.id/AntoSJ13" target="_blank" rel="noopener"
+               style="display:inline-flex;align-items:center;gap:6px;padding:9px 18px;border-radius:50px;background:linear-gradient(135deg,#ff6b6b,#ee4d2d);color:white;text-decoration:none;font-family:'DM Sans',sans-serif;font-weight:600;font-size:13px;box-shadow:0 3px 12px rgba(238,77,45,0.4)">
+                ☕ TRAKTEER
+            </a>
+            <a href="https://youtu.be/PYWRUUFDNJA?si=1cSJPVu_zVeo8pCM" target="_blank" rel="noopener"
+               style="display:inline-flex;align-items:center;gap:6px;padding:9px 18px;border-radius:50px;background:rgba(255,255,255,0.08);color:var(--ivory-dim);text-decoration:none;font-family:'DM Sans',sans-serif;font-weight:600;font-size:13px;border:1px solid rgba(142,182,149,0.2)">
+                🛡️ DON'T CLICK
+            </a>
+        </div>
         <button class="easter-egg-close" onclick="closeEasterEgg()">✨ Tutup</button>
     </div>
 </div>
@@ -1094,6 +1228,7 @@
         <div class="viewer-title" id="viewer-title">Memuat...</div>
         <div class="viewer-page-info" id="viewer-page-info"></div>
         <button class="reader-settings-btn" onclick="toggleSearch()" title="Cari">🔍</button>
+        <button class="reader-settings-btn" id="translate-btn" onclick="openTranslatePanel()" title="Terjemahkan">🌐</button>
         <button class="reader-settings-btn" id="fullscreen-btn" onclick="toggleFullscreen()" title="Layar Penuh">⛶</button>
         <button class="bookmark-btn" id="bookmark-btn" onclick="toggleBookmark()" title="Bookmark">🔖</button>
         <button class="reader-settings-btn" onclick="toggleSettings()">⚙️</button>
@@ -1130,6 +1265,7 @@
     </div>
 
     <div id="viewer-content">
+        <div id="settings-backdrop" onclick="closeSettings()"></div>
         <div id="pdf-viewer-content" class="hidden">
             <div id="pdf-virtual-scroll"></div>
         </div>
@@ -1207,6 +1343,97 @@
             <button class="btn btn-outline" onclick="closeConfirm()">Batal</button>
             <button class="btn btn-danger"  id="confirm-ok">Hapus</button>
         </div>
+    </div>
+</div>
+
+<!-- Translate Viewer (fullscreen) -->
+<div id="translate-viewer">
+    <!-- Header: back + title + lang selects + go -->
+    <div class="translate-viewer-header">
+        <button class="translate-back-btn" onclick="closeTranslateViewer()">←</button>
+        <div class="translate-viewer-title" id="translate-viewer-title">🌐 Terjemahan</div>
+        <select class="translate-lang-select" id="translate-from">
+            <option value="auto">🔍 Otomatis</option>
+            <option value="id">🇮🇩 Indonesia</option>
+            <option value="en">🇺🇸 Inggris</option>
+            <option value="ar">🇸🇦 Arab</option>
+            <option value="zh-CN">🇨🇳 Mandarin</option>
+            <option value="ja">🇯🇵 Jepang</option>
+            <option value="ko">🇰🇷 Korea</option>
+            <option value="fr">🇫🇷 Prancis</option>
+            <option value="de">🇩🇪 Jerman</option>
+            <option value="es">🇪🇸 Spanyol</option>
+            <option value="pt">🇵🇹 Portugis</option>
+            <option value="ru">🇷🇺 Rusia</option>
+            <option value="nl">🇳🇱 Belanda</option>
+            <option value="it">🇮🇹 Italia</option>
+            <option value="tr">🇹🇷 Turki</option>
+            <option value="th">🇹🇭 Thailand</option>
+            <option value="vi">🇻🇳 Vietnam</option>
+            <option value="ms">🇲🇾 Melayu</option>
+            <option value="hi">🇮🇳 Hindi</option>
+        </select>
+        <button class="translate-swap-btn" onclick="swapTranslateLang()" title="Tukar bahasa">⇆</button>
+        <select class="translate-lang-select" id="translate-to">
+            <option value="id" selected>🇮🇩 Indonesia</option>
+            <option value="en">🇺🇸 Inggris</option>
+            <option value="ar">🇸🇦 Arab</option>
+            <option value="zh-CN">🇨🇳 Mandarin</option>
+            <option value="ja">🇯🇵 Jepang</option>
+            <option value="ko">🇰🇷 Korea</option>
+            <option value="fr">🇫🇷 Prancis</option>
+            <option value="de">🇩🇪 Jerman</option>
+            <option value="es">🇪🇸 Spanyol</option>
+            <option value="pt">🇵🇹 Portugis</option>
+            <option value="ru">🇷🇺 Rusia</option>
+            <option value="nl">🇳🇱 Belanda</option>
+            <option value="it">🇮🇹 Italia</option>
+            <option value="tr">🇹🇷 Turki</option>
+            <option value="th">🇹🇭 Thailand</option>
+            <option value="vi">🇻🇳 Vietnam</option>
+            <option value="ms">🇲🇾 Melayu</option>
+            <option value="hi">🇮🇳 Hindi</option>
+        </select>
+        <button class="translate-go-btn" id="translate-go-btn" onclick="doTranslate()">▶ Terjemahkan</button>
+    </div>
+
+    <!-- Scope pills -->
+    <div class="translate-scope-row">
+        <button class="translate-scope-btn active" id="scope-page"      onclick="setTranslateScope('page')">📄 <span id="scope-page-label">Dokumen Ini</span></button>
+        <button class="translate-scope-btn"         id="scope-selection" onclick="setTranslateScope('selection')">✏️ Teks Dipilih</button>
+        <button class="translate-scope-btn"         id="scope-custom"   onclick="setTranslateScope('custom')">⌨️ Teks Sendiri</button>
+    </div>
+
+    <!-- Custom text input (only when scope=custom) -->
+    <div id="translate-custom-wrap">
+        <textarea id="translate-custom-input" placeholder="Ketik atau tempel teks di sini..."></textarea>
+    </div>
+
+    <!-- Body: two panes -->
+    <!-- Hidden source pane (still needed for JS) -->
+    <div id="translate-source-pane" style="display:none"></div>
+
+    <div id="translate-body">
+        <div class="translate-pane-content" id="translate-result-pane" style="flex:1;overflow-y:auto;padding:20px 24px;font-size:15px;line-height:1.9;color:var(--ivory);background:var(--forest-mid);white-space:pre-wrap;word-break:break-word">
+            <span style="color:var(--ivory-dim);font-style:italic">Tekan ▶ Terjemahkan untuk memulai...</span>
+        </div>
+        <div id="translate-new-chunk-banner" style="display:none;position:absolute;bottom:60px;left:50%;transform:translateX(-50%);background:var(--leaf);color:var(--forest-dark);padding:7px 18px;border-radius:50px;font-size:12px;font-weight:600;cursor:pointer;z-index:10;white-space:nowrap;box-shadow:0 4px 14px rgba(0,0,0,0.3)" onclick="scrollTranslateToBottom()">
+            ↓ Terjemahan baru
+        </div>
+    </div>
+
+    <!-- Progress bar -->
+    <div id="translate-progress-wrap">
+        <div id="translate-progress-bar-outer">
+            <div id="translate-progress-bar-inner"></div>
+        </div>
+        <div id="translate-progress-text">0%</div>
+    </div>
+
+    <!-- Footer -->
+    <div class="translate-viewer-footer">
+        <button class="translate-footer-btn" onclick="copyTranslation()">📋 Salin Terjemahan</button>
+        <button class="translate-footer-btn" id="translate-cancel-btn" onclick="cancelTranslate()">✕ Batal</button>
     </div>
 </div>
 
@@ -1393,11 +1620,23 @@ function updateBookCount() {
     document.getElementById('book-count').textContent = `${getFiltered().length} buku`;
 }
 
-function updateStorage() {
-    const total = allBooks.reduce((s, b) => s + (b.size || b.fileBlob?.size || 0), 0);
-    const pct   = Math.min(100, (total / (500 * 1024 * 1024)) * 100);
+async function updateStorage() {
+    const used = allBooks.reduce((s, b) => s + (b.size || b.fileBlob?.size || 0), 0);
+    let quota = 500 * 1024 * 1024; // fallback 500MB
+    try {
+        if (navigator.storage && navigator.storage.estimate) {
+            const est = await navigator.storage.estimate();
+            if (est.quota) quota = est.quota;
+        }
+    } catch(e) {}
+    const pct = Math.min(100, (used / quota) * 100);
     document.getElementById('storage-fill').style.width = pct + '%';
-    document.getElementById('storage-used').textContent = (total / 1048576).toFixed(1) + ' MB';
+    const usedMB = (used / 1048576).toFixed(1);
+    const quotaMB = quota >= 1073741824
+        ? (quota / 1073741824).toFixed(1) + ' GB'
+        : Math.round(quota / 1048576) + ' MB';
+    document.getElementById('storage-used').textContent = usedMB + ' MB';
+    document.getElementById('storage-text').innerHTML = `<span id="storage-used">${usedMB} MB</span> / ${quotaMB}`;
 }
 
 function renderGrid(target = 'book-grid', books = getFiltered(), emptyId = 'empty-state') {
@@ -1697,6 +1936,7 @@ function navigateTo(view) {
     document.getElementById('filter-tabs').style.display = isLib ? 'flex' : 'none';
     document.getElementById('search-wrap').style.display = isLib ? 'block' : 'none';
     document.getElementById('book-count').style.display  = isLib ? '' : 'none';
+    document.querySelector('.fab').style.display         = isLib ? '' : 'none';
     if (view === 'recent') renderRecentGrid();
 }
 
@@ -1709,7 +1949,7 @@ async function openReader(bookId) {
     if (!book) return;
 
     showLoading('Membuka file...');
-    document.getElementById('viewer-title').textContent = book.title + '.' + book.ext;
+    document.getElementById('viewer-title').textContent = book.title;
     document.getElementById('viewer-screen').classList.add('active');
 
     // Sembunyikan semua viewer
@@ -1731,6 +1971,7 @@ async function openReader(bookId) {
 
     const cat = getFileCategory(book.ext);
     currentFileType = cat;
+    updateTranslateBtn();
     try {
         if      (cat === 'pdf')   await openPDF(book, document.getElementById('pdf-viewer-content'));
         else if (cat === 'epub')  await openEPUB(book, document.getElementById('epub-render-area'), document.getElementById('epub-navigation-bar'));
@@ -2081,6 +2322,9 @@ async function closeViewer() {
     document.getElementById('word-toolbar').classList.remove('visible');
     document.getElementById('word-toc-panel').classList.remove('open');
     closeSearch();
+    closeTranslateViewer();
+    const tb = document.getElementById('translate-btn');
+    if (tb) tb.style.display = '';
     renderGrid();
 }
 
@@ -2310,7 +2554,17 @@ function trackWordProgress(container, body, bookId) {
 // ============================================================
 // READER SETTINGS
 // ============================================================
-function toggleSettings() { document.getElementById('settings-panel').classList.toggle('visible'); }
+function toggleSettings() {
+    const panel = document.getElementById('settings-panel');
+    const backdrop = document.getElementById('settings-backdrop');
+    const isOpen = panel.classList.contains('visible');
+    panel.classList.toggle('visible', !isOpen);
+    backdrop.classList.toggle('visible', !isOpen);
+}
+function closeSettings() {
+    document.getElementById('settings-panel').classList.remove('visible');
+    document.getElementById('settings-backdrop').classList.remove('visible');
+}
 
 function applyFontSize(val) {
     document.getElementById('font-size-label').textContent = val + 'px';
@@ -2372,10 +2626,23 @@ function confirmDelete(id, title) {
     document.getElementById('confirm-overlay').classList.add('active');
 }
 function confirmClearAll() {
-    document.getElementById('confirm-title').textContent = 'Hapus Semua Data?';
-    document.getElementById('confirm-sub').textContent   = 'Semua buku akan dihapus permanen.';
-    document.getElementById('confirm-ok').textContent    = 'Hapus Semua';
+    document.getElementById('confirm-title').textContent = '⚠️ Hapus Semua Data?';
+    document.getElementById('confirm-sub').innerHTML     = 'Semua buku akan dihapus permanen dan <strong>tidak bisa dikembalikan</strong>.<br><br>Ketik <strong>HAPUS</strong> untuk konfirmasi:';
+    // inject input konfirmasi
+    const existing = document.getElementById('confirm-type-input');
+    if (!existing) {
+        const inp = document.createElement('input');
+        inp.id = 'confirm-type-input';
+        inp.placeholder = 'Ketik HAPUS';
+        inp.style.cssText = 'width:100%;margin-top:10px;padding:10px 12px;border-radius:8px;border:1px solid rgba(224,92,92,0.4);background:var(--forest-dark);color:var(--ivory);font-family:"DM Sans",sans-serif;font-size:14px;outline:none;box-sizing:border-box;';
+        document.getElementById('confirm-sub').appendChild(inp);
+    } else {
+        existing.value = '';
+    }
+    document.getElementById('confirm-ok').textContent = 'Hapus Semua';
     pendingConfirmFn = async () => {
+        const val = (document.getElementById('confirm-type-input')?.value || '').trim().toUpperCase();
+        if (val !== 'HAPUS') { showToast('Ketik HAPUS untuk konfirmasi'); return; }
         await new Promise(r => { const tx = db.transaction(STORE,'readwrite'); tx.objectStore(STORE).clear(); tx.oncomplete = r; });
         closeConfirm(); renderLibrary(); showToast('Semua data dihapus');
     };
@@ -2554,82 +2821,6 @@ function onFSMouseReveal() { scheduleHideBars(); }
 document.addEventListener('fullscreenchange',       updateFullscreenBtn);
 document.addEventListener('webkitfullscreenchange', updateFullscreenBtn);
 
-// ============================================================
-// DRAG & DROP
-// ============================================================
-(function initDragDrop() {
-    const overlay  = document.getElementById('drop-overlay');
-    let dragCounter = 0; // track enter/leave di child elements
-
-    // Hanya aktif kalau viewer sedang tutup (di library)
-    function isLibraryVisible() {
-        return !document.getElementById('viewer-screen').classList.contains('active');
-    }
-
-    document.addEventListener('dragenter', e => {
-        if (!isLibraryVisible()) return;
-        // Pastikan ada file (bukan drag teks/link)
-        if (!e.dataTransfer.types.includes('Files')) return;
-        e.preventDefault();
-        dragCounter++;
-        overlay.classList.add('active');
-    });
-
-    document.addEventListener('dragleave', e => {
-        if (!isLibraryVisible()) return;
-        dragCounter--;
-        if (dragCounter <= 0) {
-            dragCounter = 0;
-            overlay.classList.remove('active');
-        }
-    });
-
-    document.addEventListener('dragover', e => {
-        if (!isLibraryVisible()) return;
-        e.preventDefault();
-        e.dataTransfer.dropEffect = 'copy';
-    });
-
-    document.addEventListener('drop', async e => {
-        e.preventDefault();
-        dragCounter = 0;
-        overlay.classList.remove('active');
-        if (!isLibraryVisible()) return;
-
-        const files = Array.from(e.dataTransfer.files).filter(f => {
-            const ext = f.name.split('.').pop().toLowerCase();
-            return ['pdf','epub','docx','doc','jpg','jpeg','png','gif','webp',
-                    'bmp','svg','txt','md','js','ts','jsx','tsx','html','css',
-                    'json','xml','yaml','yml','py','java','cpp','c','cs','go',
-                    'rs','php','rb','sh','sql','vue','kt','swift'].includes(ext);
-        });
-
-        if (!files.length) { showToast('Format file tidak didukung'); return; }
-
-        showLoading(`Memproses ${files.length} file...`);
-        for (const file of files) {
-            try {
-                const ext   = file.name.split('.').pop().toLowerCase();
-                const cover = await generateCover(file, ext);
-                await addBookToDB({
-                    title:      file.name.replace(/\.[^.]+$/, ''),
-                    fileName:   file.name,
-                    ext,
-                    fileBlob:   file,
-                    coverImage: cover,
-                    progress:   0,
-                    lastPage:   1,
-                    lastCfi:    null,
-                    addedAt:    Date.now(),
-                    lastRead:   null
-                });
-            } catch(err) { console.error(err); }
-        }
-        hideLoading();
-        renderLibrary();
-        showToast(`${files.length} file berhasil ditambahkan 📚`);
-    });
-})();
 
 // ============================================================
 // PINCH TO ZOOM & DOUBLE TAP — CSS scale, NO re-render saat pinch
@@ -3196,6 +3387,327 @@ document.addEventListener('DOMContentLoaded', () => {
     const saved = localStorage.getItem('grove_theme');
     if (saved) applyTheme(saved);
 });
+
+// ============================================================
+// TRANSLATE FEATURE — Google Translate, fullscreen viewer, auto-chunk
+// ============================================================
+let translateScope        = 'page';   // 'page' | 'selection' | 'custom'
+let translateCancelled    = false;
+let translateRunning      = false;
+let translateAllChunks    = [];       // semua chunk dari teks sumber
+let translateChunkOffset  = 0;        // chunk mana yang belum diterjemahkan
+let translateResultSoFar  = '';       // akumulasi hasil terjemahan
+const CHUNK_SIZE          = 4500;     // chars per Google Translate request
+const BATCH_LIMIT         = 10;       // max auto-translate per klik
+
+// ---------- Open / Close ----------
+function openTranslateViewer() {
+    document.getElementById('translate-viewer').classList.add('active');
+    // Update scope label berdasarkan tipe file
+    const label = document.getElementById('scope-page-label');
+    if (label) {
+        if (currentFileType === 'epub') label.textContent = 'Bab Ini';
+        else if (currentFileType === 'pdf') label.textContent = 'Semua Halaman';
+        else if (currentFileType === 'docx') label.textContent = 'Dokumen Ini';
+        else label.textContent = 'File Ini';
+    }
+    loadTranslateSourceAsync();
+}
+
+function closeTranslateViewer() {
+    cancelTranslate();
+    document.getElementById('translate-viewer').classList.remove('active');
+}
+
+// alias for header button
+window.openTranslatePanel = openTranslateViewer;
+function closeTranslatePanel() { closeTranslateViewer(); }
+
+// ---------- Scope ----------
+function setTranslateScope(scope) {
+    translateScope = scope;
+    document.querySelectorAll('.translate-scope-btn').forEach(b => b.classList.remove('active'));
+    document.getElementById('scope-' + scope).classList.add('active');
+    const wrap = document.getElementById('translate-custom-wrap');
+    wrap.style.display = scope === 'custom' ? 'block' : 'none';
+    if (scope !== 'custom') loadTranslateSourceAsync();
+    else setSourcePane('Ketik atau tempel teks di kotak atas, lalu tekan Terjemahkan.', true);
+}
+
+// ---------- Load source text ----------
+async function loadTranslateSourceAsync() {
+    setSourcePane('⏳ Mengambil teks...', true);
+    const text = await getFullSourceText();
+    if (!text) {
+        setSourcePane('Tidak ada teks yang dapat diekstrak.', true);
+        return;
+    }
+    setSourcePane(text);
+    // Reset chunk state setiap kali sumber baru dimuat
+    translateAllChunks   = chunkText(text, CHUNK_SIZE);
+    translateChunkOffset = 0;
+    translateResultSoFar = '';
+    const total    = translateAllChunks.length;
+    const charInfo = `${text.length.toLocaleString()} karakter · ${total} bagian`;
+    document.getElementById('translate-viewer-title').textContent = `🌐 ${charInfo}`;
+    // Reset tombol
+    const goBtn = document.getElementById('translate-go-btn');
+    goBtn.textContent = '▶ Terjemahkan';
+    goBtn.disabled    = false;
+    // Kosongkan hasil lama
+    document.getElementById('translate-result-pane').innerHTML =
+        '<span style="color:var(--ivory-dim);font-style:italic">Tekan ▶ Terjemahkan untuk memulai...</span>';
+    document.getElementById('translate-progress-wrap').classList.remove('show');
+}
+
+function setSourcePane(text, italic = false) {
+    const pane = document.getElementById('translate-source-pane');
+    if (italic) {
+        pane.innerHTML = `<span style="color:var(--ivory-dim);font-style:italic">${text}</span>`;
+    } else {
+        pane.textContent = text;
+    }
+}
+
+// ---------- Extract text from current document ----------
+async function getFullSourceText() {
+    if (translateScope === 'custom') {
+        return document.getElementById('translate-custom-input').value.trim();
+    }
+    if (translateScope === 'selection') {
+        let sel = window.getSelection ? window.getSelection().toString().trim() : '';
+        if (!sel) {
+            try {
+                const c = currentRendition && currentRendition.getContents();
+                if (c && c.length) sel = c[0].window.getSelection().toString().trim();
+            } catch(e) {}
+        }
+        return sel;
+    }
+    // scope === 'page'
+    try {
+        if (currentFileType === 'epub' && currentRendition) {
+            const c = currentRendition.getContents();
+            return (c && c.length) ? (c[0].document.body.innerText || '') : '';
+        }
+        if (currentFileType === 'docx') {
+            return document.getElementById('word-viewer-body')?.innerText || '';
+        }
+        if (currentFileType === 'text') {
+            return document.getElementById('code-pre')?.textContent || '';
+        }
+        if (currentFileType === 'pdf' && pdfDoc) {
+            // ambil semua halaman PDF — user bisa ganti scope jika hanya mau 1 hal
+            showToast('Mengambil semua teks PDF...');
+            let fullText = '';
+            for (let p = 1; p <= pdfTotalPages; p++) {
+                const page = await pdfDoc.getPage(p);
+                const tc   = await page.getTextContent();
+                fullText  += tc.items.map(i => i.str).join(' ') + '\n\n';
+            }
+            return fullText.trim();
+        }
+    } catch(e) {}
+    return '';
+}
+
+// ---------- Lang swap ----------
+function swapTranslateLang() {
+    const f = document.getElementById('translate-from');
+    const t = document.getElementById('translate-to');
+    if (f.value === 'auto') return;
+    [f.value, t.value] = [t.value, f.value];
+}
+
+// ---------- Chunk helper ----------
+function chunkText(text, size) {
+    const chunks = [];
+    // Split on paragraph / sentence boundaries to avoid cutting mid-word
+    const paragraphs = text.split(/\n+/);
+    let current = '';
+    for (const para of paragraphs) {
+        if ((current + '\n' + para).length > size && current.length > 0) {
+            chunks.push(current.trim());
+            current = para;
+        } else {
+            current = current ? current + '\n' + para : para;
+        }
+    }
+    if (current.trim()) chunks.push(current.trim());
+    return chunks;
+}
+
+// ---------- Google Translate (unofficial endpoint) ----------
+async function googleTranslate(text, from, to) {
+    const sl = from === 'auto' ? 'auto' : from;
+    const url = `https://translate.googleapis.com/translate_a/single?client=gtx&sl=${sl}&tl=${to}&dt=t&q=${encodeURIComponent(text)}`;
+    const res  = await fetch(url);
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const data = await res.json();
+    // data[0] is array of [translated, original, ...]
+    return data[0].map(seg => seg[0]).join('');
+}
+
+// ---------- Main translate function ----------
+async function doTranslate() {
+    if (translateRunning) return;
+
+    // Jika scope custom, ambil dulu teks dan build chunks
+    if (translateScope === 'custom') {
+        const raw = document.getElementById('translate-custom-input').value.trim();
+        if (!raw) { showToast('Tidak ada teks untuk diterjemahkan.'); return; }
+        // Rebuild chunks hanya jika berubah
+        if (translateAllChunks.length === 0 || translateChunkOffset === 0) {
+            setSourcePane(raw);
+            translateAllChunks   = chunkText(raw, CHUNK_SIZE);
+            translateChunkOffset = 0;
+            translateResultSoFar = '';
+        }
+    }
+
+    if (!translateAllChunks.length) {
+        showToast('Muat teks sumber terlebih dahulu.');
+        return;
+    }
+
+    if (translateChunkOffset >= translateAllChunks.length) {
+        showToast('Semua bagian sudah diterjemahkan ✅');
+        return;
+    }
+
+    const from        = document.getElementById('translate-from').value;
+    const to          = document.getElementById('translate-to').value;
+    const total       = translateAllChunks.length;
+    const batchStart  = translateChunkOffset;
+    const batchEnd    = Math.min(batchStart + BATCH_LIMIT, total); // eksklusif
+
+    const resultPane  = document.getElementById('translate-result-pane');
+    const progressW   = document.getElementById('translate-progress-wrap');
+    const progressB   = document.getElementById('translate-progress-bar-inner');
+    const progressT   = document.getElementById('translate-progress-text');
+    const goBtn       = document.getElementById('translate-go-btn');
+    const cancelBtn   = document.getElementById('translate-cancel-btn');
+
+    // Jika ini sesi pertama, bersihkan result pane
+    if (batchStart === 0) {
+        translateResultSoFar = '';
+        resultPane.textContent = '';
+    }
+
+    progressW.classList.add('show');
+    goBtn.disabled = true;
+    cancelBtn.classList.add('show');
+    translateCancelled = false;
+    translateRunning   = true;
+
+    for (let i = batchStart; i < batchEnd; i++) {
+        if (translateCancelled) break;
+
+        const pct = Math.round((i / total) * 100);
+        progressB.style.width = pct + '%';
+        progressT.textContent = `Bagian ${i + 1} / ${total} (${pct}%)`;
+
+        try {
+            const translated = await googleTranslate(translateAllChunks[i], from, to);
+            translateResultSoFar += translated + (i < total - 1 ? '\n\n' : '');
+            resultPane.textContent = translateResultSoFar;
+            // Smart scroll: hanya auto-scroll jika user sudah dekat bawah atau ini chunk pertama
+            const atBottom = (resultPane.scrollHeight - resultPane.scrollTop - resultPane.clientHeight) < 150;
+            const banner   = document.getElementById('translate-new-chunk-banner');
+            if (atBottom || i === batchStart) {
+                resultPane.scrollTop = resultPane.scrollHeight;
+                if (banner) banner.style.display = 'none';
+            } else {
+                if (banner) banner.style.display = 'block';
+            }
+        } catch(err) {
+            resultPane.textContent = translateResultSoFar + `\n\n[Error pada bagian ${i+1}: ${err.message}]`;
+            showToast('Gagal pada bagian ' + (i + 1));
+            translateRunning = false;
+            goBtn.disabled   = false;
+            cancelBtn.classList.remove('show');
+            return;
+        }
+
+        if (i < batchEnd - 1 && !translateCancelled) {
+            await new Promise(r => setTimeout(r, 300));
+        }
+    }
+
+    translateRunning = false;
+    cancelBtn.classList.remove('show');
+    document.getElementById('translate-new-chunk-banner').style.display = 'none';
+
+    if (translateCancelled) {
+        progressT.textContent = 'Dibatalkan.';
+        goBtn.textContent = '▶ Lanjutkan';
+        goBtn.disabled    = false;
+        return;
+    }
+
+    // Update offset ke chunk berikutnya
+    translateChunkOffset = batchEnd;
+    const pctDone = Math.round((batchEnd / total) * 100);
+    progressB.style.width = pctDone + '%';
+
+    if (batchEnd >= total) {
+        // Semua selesai
+        progressT.textContent = `✅ Selesai · ${total} bagian`;
+        progressB.style.width = '100%';
+        goBtn.textContent = '✅ Selesai';
+        goBtn.disabled    = true;
+        showToast('Terjemahan selesai ✅');
+    } else {
+        // Masih ada sisa
+        const sisa = total - batchEnd;
+        progressT.textContent = `Bagian ${batchEnd} / ${total} selesai · ${sisa} bagian tersisa`;
+        goBtn.textContent = `▶ Lanjutkan (${sisa} sisa)`;
+        goBtn.disabled    = false;
+        showToast(`${batchEnd} bagian selesai · Tekan Lanjutkan untuk ${sisa} bagian berikutnya`);
+    }
+}
+
+// ---------- Cancel ----------
+function cancelTranslate() {
+    if (!translateRunning) return;
+    translateCancelled = true;
+}
+
+function scrollTranslateToBottom() {
+    const p = document.getElementById('translate-result-pane');
+    if (p) p.scrollTop = p.scrollHeight;
+    const b = document.getElementById('translate-new-chunk-banner');
+    if (b) b.style.display = 'none';
+}
+
+// ---------- Copy result ----------
+function copyTranslation() {
+    const text = document.getElementById('translate-result-pane').textContent.trim();
+    if (!text || text.startsWith('Hasil akan muncul')) {
+        showToast('Belum ada terjemahan.');
+        return;
+    }
+    navigator.clipboard.writeText(text).then(() => {
+        showToast('Terjemahan disalin! 📋');
+    }).catch(() => {
+        const ta = document.createElement('textarea');
+        ta.value = text;
+        document.body.appendChild(ta); ta.select();
+        document.execCommand('copy'); document.body.removeChild(ta);
+        showToast('Terjemahan disalin! 📋');
+    });
+}
+
+// ---------- Show/hide translate button ----------
+function updateTranslateBtn() {
+    const btn = document.getElementById('translate-btn');
+    if (!btn) return;
+    const supported = ['epub', 'docx', 'text', 'pdf'];
+    btn.style.display = (currentFileType && supported.includes(currentFileType)) ? '' : 'none';
+}
+
+// Hook ke updateTranslateBtn selesai di atas
+
   if ('serviceWorker' in navigator) {
     window.addEventListener('load', () => {
       navigator.serviceWorker.register('./sw.js')
