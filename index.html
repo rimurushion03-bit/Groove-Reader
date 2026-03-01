@@ -344,7 +344,39 @@
             transition: opacity 0.3s ease, transform 0.3s ease;
         }
 
-        
+        /* ===== DRAG & DROP OVERLAY ===== */
+        #drop-overlay {
+            display: none; position: fixed; inset: 0; z-index: 9000;
+            background: rgba(26,36,33,0.92);
+            align-items: center; justify-content: center;
+            flex-direction: column; gap: 16px;
+            pointer-events: none;
+        }
+        #drop-overlay.active {
+            display: flex;
+            pointer-events: auto;
+        }
+        .drop-icon  { font-size: 72px; animation: dropBounce 0.7s ease infinite alternate; }
+        @keyframes dropBounce {
+            from { transform: translateY(0); }
+            to   { transform: translateY(-12px); }
+        }
+        .drop-title {
+            font-family: 'Playfair Display', serif; font-size: 26px;
+            color: var(--leaf); font-weight: 700;
+        }
+        .drop-sub { font-size: 14px; color: var(--ivory-dim); }
+        .drop-border {
+            position: fixed; inset: 16px; border-radius: 20px;
+            border: 3px dashed var(--leaf);
+            pointer-events: none;
+            animation: dropPulse 1.2s ease infinite alternate;
+        }
+        @keyframes dropPulse {
+            from { border-color: var(--leaf); box-shadow: 0 0 0 0 rgba(142,182,149,0); }
+            to   { border-color: var(--leaf-light); box-shadow: 0 0 24px 4px rgba(142,182,149,0.15); }
+        }
+
         .viewer-header {
             display: flex; align-items: center; padding: 50px 10px 10px; gap: 6px;
             background: rgba(26,36,33,0.97); backdrop-filter: blur(10px);
@@ -720,7 +752,35 @@
             transition: transform 0.1s;
         }
 
-        /* ===== TEXT / CODE VIEWER ===== */
+        /* ===== CBZ VIEWER ===== */
+        #cbz-viewer-content {
+            width: 100%; height: 100%;
+            overflow-y: auto; overflow-x: hidden;
+            background: #111;
+            box-sizing: border-box;
+        }
+        #cbz-pages-inner {
+            display: flex; flex-direction: column;
+            align-items: center; gap: 4px;
+            padding: 8px 0 16px;
+            transform-origin: top left;
+            will-change: transform;
+        }
+        .cbz-page-wrap {
+            width: 100%; display: flex; justify-content: center;
+            flex-shrink: 0;
+        }
+        .cbz-page-img {
+            display: block; width: 100%; max-width: 100%; height: auto;
+            user-select: none; -webkit-user-drag: none;
+        }
+        #cbz-toolbar {
+            display: none; align-items: center; justify-content: center; gap: 10px;
+            padding: 10px 16px;
+            background: rgba(26,36,33,0.97); backdrop-filter: blur(10px);
+            border-top: 1px solid rgba(142,182,149,0.12); flex-shrink: 0;
+        }
+        #cbz-toolbar.visible { display: flex; }
         #text-viewer-content {
             width: 100%; height: 100%;
             overflow: auto;
@@ -1057,6 +1117,14 @@
 
 <div id="leaves-container"></div>
 
+<!-- Drag & Drop Overlay -->
+<div id="drop-overlay">
+    <div class="drop-border"></div>
+    <div class="drop-icon">📂</div>
+    <div class="drop-title">Lepaskan untuk Menambahkan</div>
+    <div class="drop-sub">PDF · EPUB · Word · Gambar · Teks</div>
+</div>
+
 <!-- Drawer -->
 <div class="drawer-overlay" id="drawer-overlay" onclick="closeDrawer()"></div>
 <div class="drawer" id="drawer">
@@ -1105,6 +1173,7 @@
         <button class="filter-tab active" data-filter="all">Semua</button>
         <button class="filter-tab" data-filter="pdf">PDF</button>
         <button class="filter-tab" data-filter="epub">EPUB</button>
+        <button class="filter-tab" data-filter="cbz">CBZ/ZIP</button>
         <button class="filter-tab" data-filter="docx">Word</button>
         <button class="filter-tab" data-filter="image">Gambar</button>
         <button class="filter-tab" data-filter="text">Teks</button>
@@ -1219,7 +1288,7 @@
 </div>
 
 <button class="fab" onclick="document.getElementById('file-input').click()">+</button>
-<input type="file" id="file-input" class="hidden" multiple accept=".pdf,.epub,.docx,.doc,.jpg,.jpeg,.png,.gif,.webp,.bmp,.svg,.txt,.md,.js,.ts,.jsx,.tsx,.html,.css,.json,.xml,.yaml,.yml,.py,.java,.cpp,.c,.cs,.go,.rs,.php,.rb,.sh,.sql,.vue,.kt,.swift">
+<input type="file" id="file-input" class="hidden" multiple accept=".pdf,.epub,.docx,.doc,.cbz,.zip,.jpg,.jpeg,.png,.gif,.webp,.bmp,.svg,.txt,.md,.js,.ts,.jsx,.tsx,.html,.css,.json,.xml,.yaml,.yml,.py,.java,.cpp,.c,.cs,.go,.rs,.php,.rb,.sh,.sql,.vue,.kt,.swift">
 
 <!-- READER -->
 <div id="viewer-screen">
@@ -1280,6 +1349,9 @@
         <div id="word-viewer-content" class="hidden">
             <div id="word-viewer-body"></div>
         </div>
+        <div id="cbz-viewer-content" class="hidden">
+            <div id="cbz-pages-inner"></div>
+        </div>
         <div id="settings-panel">
             <div class="settings-panel-title">⚙️ Pengaturan Baca</div>
             <div class="settings-row" id="font-size-row" style="display:none">
@@ -1322,6 +1394,13 @@
         <button class="toolbar-btn" onclick="adjustZoom(-10)">🔍−</button>
         <span class="toolbar-info" id="zoom-display">100%</span>
         <button class="toolbar-btn" onclick="adjustZoom(10)">🔍+</button>
+    </div>
+
+    <div id="cbz-toolbar">
+        <button class="toolbar-btn" onclick="cbzZoom(-15)">🔍−</button>
+        <span class="toolbar-info" id="cbz-zoom-display">100%</span>
+        <button class="toolbar-btn" onclick="cbzZoom(15)">🔍+</button>
+        <span class="toolbar-info" id="cbz-page-info" style="min-width:80px">-</span>
     </div>
 </div>
 
@@ -1472,6 +1551,7 @@ const WORD_EXTS  = new Set(['docx','doc']);
 function getFileCategory(ext) {
     if (ext === 'pdf')          return 'pdf';
     if (ext === 'epub')         return 'epub';
+    if (ext === 'cbz' || ext === 'zip') return 'cbz';
     if (WORD_EXTS.has(ext))     return 'docx';
     if (IMAGE_EXTS.has(ext))    return 'image';
     if (TEXT_EXTS.has(ext))     return 'text';
@@ -1481,6 +1561,7 @@ function getFileCategory(ext) {
 function getFilePlaceholder(ext) {
     if (ext === 'pdf')           return '📄';
     if (ext === 'epub')          return '📖';
+    if (ext === 'cbz' || ext === 'zip') return '🗜️';
     if (WORD_EXTS.has(ext))      return '📝';
     if (IMAGE_EXTS.has(ext))     return '🖼️';
     const codeIcons = {js:'🟨',ts:'🔷',py:'🐍',html:'🌐',css:'🎨',json:'📋',
@@ -1581,8 +1662,20 @@ async function generateCover(file, ext) {
             canvas.height  = viewport.height;
             await page.render({ canvasContext: canvas.getContext('2d'), viewport }).promise;
             return canvas.toDataURL('image/jpeg', 0.7);
+        } else if (ext === 'cbz' || ext === 'zip') {
+            // Ambil gambar pertama dari ZIP sebagai cover
+            const zip    = await JSZip.loadAsync(await file.arrayBuffer());
+            const images = Object.keys(zip.files)
+                .filter(n => /\.(jpe?g|png|webp|gif)$/i.test(n) && !zip.files[n].dir)
+                .sort();
+            if (!images.length) return null;
+            const blob = await zip.files[images[0]].async('blob');
+            return await new Promise(resolve => {
+                const reader = new FileReader();
+                reader.onload = e => resolve(e.target.result);
+                reader.readAsDataURL(blob);
+            });
         } else if (IMAGE_EXTS.has(ext)) {
-            // Gambar langsung jadi cover thumbnail
             return await new Promise(resolve => {
                 const reader = new FileReader();
                 reader.onload = e => resolve(e.target.result);
@@ -1760,6 +1853,7 @@ function getFiltered() {
             (currentFilter === 'image'   && IMAGE_EXTS.has(b.ext)) ||
             (currentFilter === 'text'    && TEXT_EXTS.has(b.ext)) ||
             (currentFilter === 'docx'    && WORD_EXTS.has(b.ext)) ||
+            (currentFilter === 'cbz'     && (b.ext === 'cbz' || b.ext === 'zip')) ||
             b.ext === currentFilter;
         return matchSearch && matchFilter;
     });
@@ -1951,17 +2045,21 @@ async function openReader(bookId) {
     showLoading('Membuka file...');
     document.getElementById('viewer-title').textContent = book.title;
     document.getElementById('viewer-screen').classList.add('active');
+    // Push state agar tombol back fisik bisa dicegat
+    history.pushState({ grove: 'reader' }, '');
 
     // Sembunyikan semua viewer
     ['pdf-viewer-content','epub-render-area','image-viewer-content',
-     'text-viewer-content','word-viewer-content'].forEach(id => {
+     'text-viewer-content','word-viewer-content','cbz-viewer-content'].forEach(id => {
         const el = document.getElementById(id);
         el.classList.add('hidden');
         if (id === 'pdf-viewer-content') el.innerHTML = '<div id="pdf-virtual-scroll"></div>';
+        else if (id === 'cbz-viewer-content') el.innerHTML = '<div id="cbz-pages-inner"></div>';
         else if (id !== 'text-viewer-content' && id !== 'word-viewer-content') el.innerHTML = '';
     });
     document.getElementById('epub-navigation-bar').classList.remove('visible');
     document.getElementById('pdf-toolbar').classList.remove('visible');
+    document.getElementById('cbz-toolbar').classList.remove('visible');
     document.getElementById('settings-panel').classList.remove('visible');
     document.getElementById('viewer-page-info').textContent = '';
 
@@ -1975,6 +2073,7 @@ async function openReader(bookId) {
     try {
         if      (cat === 'pdf')   await openPDF(book, document.getElementById('pdf-viewer-content'));
         else if (cat === 'epub')  await openEPUB(book, document.getElementById('epub-render-area'), document.getElementById('epub-navigation-bar'));
+        else if (cat === 'cbz')   await openCBZ(book);
         else if (cat === 'image') await openImage(book);
         else if (cat === 'text')  await openText(book);
         else if (cat === 'docx')  await openWord(book);
@@ -2321,6 +2420,12 @@ async function closeViewer() {
     currentFileType = null;
     document.getElementById('word-toolbar').classList.remove('visible');
     document.getElementById('word-toc-panel').classList.remove('open');
+    document.getElementById('cbz-toolbar').classList.remove('visible');
+    // Kembalikan viewport ke no-zoom setelah keluar dari CBZ
+    document.querySelector('meta[name="viewport"]').setAttribute('content',
+        'width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no');
+    cbzBlobUrls.forEach(u => URL.revokeObjectURL(u));
+    cbzBlobUrls = [];
     closeSearch();
     closeTranslateViewer();
     const tb = document.getElementById('translate-btn');
@@ -2364,8 +2469,128 @@ async function openImage(book) {
 }
 
 // ============================================================
-// TEXT / CODE VIEWER
+// CBZ VIEWER — scroll vertikal, pinch-to-zoom, toolbar zoom
 // ============================================================
+let cbzZoomLevel  = 100;   // persen
+let cbzBlobUrls   = [];    // untuk cleanup
+
+async function openCBZ(book) {
+    const container = document.getElementById('cbz-viewer-content');
+    const inner     = document.getElementById('cbz-pages-inner');
+    container.classList.remove('hidden');
+    inner.innerHTML       = '';
+    inner.style.transform = '';
+    inner.style.width     = '';
+    container.style.overflowX = 'hidden';
+    cbzBlobUrls  = [];
+    cbzZoomLevel = 100;
+
+    // Aktifkan zoom native browser untuk CBZ
+    document.querySelector('meta[name="viewport"]').setAttribute('content',
+        'width=device-width, initial-scale=1.0');
+
+    showLoading('Membuka CBZ...');
+
+    const zip = await JSZip.loadAsync(await book.fileBlob.arrayBuffer());
+
+    const imageFiles = Object.keys(zip.files)
+        .filter(n => /\.(jpe?g|png|webp|gif)$/i.test(n) && !zip.files[n].dir)
+        .sort((a, b) => a.localeCompare(b, undefined, { numeric: true, sensitivity: 'base' }));
+
+    if (!imageFiles.length) {
+        inner.innerHTML = '<div style="padding:40px;text-align:center;color:var(--ivory-dim)">Tidak ada gambar ditemukan di file CBZ ini.</div>';
+        hideLoading();
+        return;
+    }
+
+    const total = imageFiles.length;
+    document.getElementById('viewer-page-info').textContent = `${total} halaman`;
+    document.getElementById('cbz-toolbar').classList.add('visible');
+    document.getElementById('cbz-page-info').textContent = `1 / ${total}`;
+    document.getElementById('cbz-zoom-display').textContent = '100%';
+
+    // Lazy load via IntersectionObserver — root = container (scrollable)
+    const observer = new IntersectionObserver((entries) => {
+        entries.forEach(entry => {
+            if (!entry.isIntersecting) return;
+            const wrap = entry.target;
+            if (wrap.dataset.loaded) return;
+            wrap.dataset.loaded = '1';
+            observer.unobserve(wrap);
+            const idx = parseInt(wrap.dataset.idx);
+            zip.files[imageFiles[idx]].async('blob').then(blob => {
+                const mime = /\.png$/i.test(imageFiles[idx])  ? 'image/png'
+                           : /\.webp$/i.test(imageFiles[idx]) ? 'image/webp'
+                           : /\.gif$/i.test(imageFiles[idx])  ? 'image/gif'
+                           : 'image/jpeg';
+                const url = URL.createObjectURL(new Blob([blob], { type: mime }));
+                cbzBlobUrls.push(url);
+                const img = document.createElement('img');
+                img.className = 'cbz-page-img';
+                img.src = url;
+                img.alt = `Halaman ${idx + 1}`;
+                wrap.innerHTML = '';
+                wrap.appendChild(img);
+            });
+        });
+    }, { root: container, rootMargin: '400px' });
+
+    imageFiles.forEach((_, idx) => {
+        const wrap = document.createElement('div');
+        wrap.className = 'cbz-page-wrap';
+        wrap.dataset.idx = idx;
+        wrap.innerHTML = `<div style="width:100%;min-height:300px;background:linear-gradient(90deg,#2d3c37 25%,#3a4d46 50%,#2d3c37 75%);background-size:200% 100%;animation:shimmer 1.5s infinite;border-radius:4px"></div>`;
+        inner.appendChild(wrap);
+        observer.observe(wrap);
+    });
+
+    // Progress saat scroll
+    container.addEventListener('scroll', () => {
+        const wraps = inner.querySelectorAll('.cbz-page-wrap');
+        let current = 1;
+        const mid = container.getBoundingClientRect().top + container.clientHeight / 2;
+        for (let i = 0; i < wraps.length; i++) {
+            if (wraps[i].getBoundingClientRect().top <= mid) current = i + 1;
+        }
+        document.getElementById('cbz-page-info').textContent = `${current} / ${total}`;
+        saveProgress(currentBookId, Math.round(((current - 1) / total) * 100), current);
+    }, { passive: true });
+
+    // Zoom ditangani native browser (viewport user-scalable=yes)
+    // Tombol toolbar tetap tersedia via applyCbzZoom untuk yang prefer tombol
+
+    // Lanjut dari halaman terakhir
+    if (book.lastPage && book.lastPage > 1) {
+        setTimeout(() => {
+            const target = inner.querySelectorAll('.cbz-page-wrap')[book.lastPage - 1];
+            if (target) target.scrollIntoView();
+        }, 300);
+    }
+
+    hideLoading();
+}
+
+function applyCbzZoom(val) {
+    cbzZoomLevel = Math.max(50, Math.min(400, val));
+    const inner     = document.getElementById('cbz-pages-inner');
+    const container = document.getElementById('cbz-viewer-content');
+    if (!inner || !container) return;
+
+    const scale = cbzZoomLevel / 100;
+    inner.style.transform       = `scale(${scale})`;
+    inner.style.transformOrigin = 'top left';
+    // Set lebar inner agar container scroll horizontal bekerja
+    inner.style.width           = (container.clientWidth / scale) + 'px';
+    // Set tinggi container agar scroll vertikal bekerja
+    container.style.overflowX   = cbzZoomLevel > 100 ? 'auto' : 'hidden';
+
+    document.getElementById('cbz-zoom-display').textContent = cbzZoomLevel + '%';
+}
+
+function setCbzZoom(pct) { applyCbzZoom(pct); }
+function cbzZoom(delta)  { applyCbzZoom(cbzZoomLevel + delta); }
+
+
 async function openText(book) {
     const container = document.getElementById('text-viewer-content');
     container.classList.remove('hidden');
@@ -2821,6 +3046,82 @@ function onFSMouseReveal() { scheduleHideBars(); }
 document.addEventListener('fullscreenchange',       updateFullscreenBtn);
 document.addEventListener('webkitfullscreenchange', updateFullscreenBtn);
 
+// ============================================================
+// DRAG & DROP
+// ============================================================
+(function initDragDrop() {
+    const overlay  = document.getElementById('drop-overlay');
+    let dragCounter = 0; // track enter/leave di child elements
+
+    // Hanya aktif kalau viewer sedang tutup (di library)
+    function isLibraryVisible() {
+        return !document.getElementById('viewer-screen').classList.contains('active');
+    }
+
+    document.addEventListener('dragenter', e => {
+        if (!isLibraryVisible()) return;
+        // Pastikan ada file (bukan drag teks/link)
+        if (!e.dataTransfer.types.includes('Files')) return;
+        e.preventDefault();
+        dragCounter++;
+        overlay.classList.add('active');
+    });
+
+    document.addEventListener('dragleave', e => {
+        if (!isLibraryVisible()) return;
+        dragCounter--;
+        if (dragCounter <= 0) {
+            dragCounter = 0;
+            overlay.classList.remove('active');
+        }
+    });
+
+    document.addEventListener('dragover', e => {
+        if (!isLibraryVisible()) return;
+        e.preventDefault();
+        e.dataTransfer.dropEffect = 'copy';
+    });
+
+    document.addEventListener('drop', async e => {
+        e.preventDefault();
+        dragCounter = 0;
+        overlay.classList.remove('active');
+        if (!isLibraryVisible()) return;
+
+        const files = Array.from(e.dataTransfer.files).filter(f => {
+            const ext = f.name.split('.').pop().toLowerCase();
+            return ['pdf','epub','docx','doc','jpg','jpeg','png','gif','webp',
+                    'bmp','svg','txt','md','js','ts','jsx','tsx','html','css',
+                    'json','xml','yaml','yml','py','java','cpp','c','cs','go',
+                    'rs','php','rb','sh','sql','vue','kt','swift'].includes(ext);
+        });
+
+        if (!files.length) { showToast('Format file tidak didukung'); return; }
+
+        showLoading(`Memproses ${files.length} file...`);
+        for (const file of files) {
+            try {
+                const ext   = file.name.split('.').pop().toLowerCase();
+                const cover = await generateCover(file, ext);
+                await addBookToDB({
+                    title:      file.name.replace(/\.[^.]+$/, ''),
+                    fileName:   file.name,
+                    ext,
+                    fileBlob:   file,
+                    coverImage: cover,
+                    progress:   0,
+                    lastPage:   1,
+                    lastCfi:    null,
+                    addedAt:    Date.now(),
+                    lastRead:   null
+                });
+            } catch(err) { console.error(err); }
+        }
+        hideLoading();
+        renderLibrary();
+        showToast(`${files.length} file berhasil ditambahkan 📚`);
+    });
+})();
 
 // ============================================================
 // PINCH TO ZOOM & DOUBLE TAP — CSS scale, NO re-render saat pinch
@@ -3719,6 +4020,99 @@ function updateTranslateBtn() {
         });
     });
   }
+// ============================================================
+// BACK BUTTON PROTECTION
+// ============================================================
+window.addEventListener('popstate', (e) => {
+    const viewerActive = document.getElementById('viewer-screen').classList.contains('active');
+
+    if (viewerActive) {
+        // Cegah keluar — push state lagi dulu, lalu tanya user
+        history.pushState({ grove: 'reader' }, '');
+
+        // Kalau translate viewer terbuka, tutup itu dulu
+        const translateActive = document.getElementById('translate-viewer').classList.contains('active');
+        if (translateActive) { closeTranslateViewer(); return; }
+
+        // Kalau settings panel terbuka, tutup dulu
+        const settingsOpen = document.getElementById('settings-panel').classList.contains('visible');
+        if (settingsOpen) { closeSettings(); return; }
+
+        // Tanya user apakah mau keluar reader
+        showExitConfirm('reader');
+    } else {
+        // Di halaman library — tanya sebelum keluar aplikasi
+        history.pushState({ grove: 'library' }, '');
+        showExitConfirm('app');
+    }
+});
+
+let exitConfirmTimer = null;
+function showExitConfirm(context = 'reader') {
+    const toast = document.getElementById('toast');
+    const key   = 'exitPending_' + context;
+
+    if (toast.dataset[key] === '1') {
+        clearTimeout(exitConfirmTimer);
+        toast.dataset[key] = '0';
+        if (context === 'reader') {
+            closeViewer();
+        } else {
+            // Keluar aplikasi — lepas history protection
+            window.removeEventListener('popstate', arguments.callee);
+            history.back();
+        }
+        return;
+    }
+
+    toast.dataset[key] = '1';
+    const msg = context === 'reader'
+        ? 'Tekan Back sekali lagi untuk keluar dari reader'
+        : 'Tekan Back sekali lagi untuk keluar aplikasi';
+    showToast(msg);
+    exitConfirmTimer = setTimeout(() => { toast.dataset[key] = '0'; }, 2500);
+}
+
+// Push state awal saat app load agar popstate bisa dicegat
+history.pushState({ grove: 'library' }, '');
+
+// ============================================================
+// CBZ DOUBLE-TAP ZOOM
+// ============================================================
+(function initCbzDoubleTap() {
+    let lastTap = 0;
+    let tapZoomed = false;
+
+    document.addEventListener('touchend', e => {
+        const container = document.getElementById('cbz-viewer-content');
+        if (!container || !container.contains(e.target)) return;
+        if (document.querySelector('meta[name="viewport"]')
+            .content.includes('user-scalable=no')) return;
+
+        const now = Date.now();
+        if (now - lastTap < 280) {
+            // Double tap — toggle zoom 100% ↔ 250%
+            e.preventDefault();
+            const touch   = e.changedTouches[0];
+            tapZoomed = !tapZoomed;
+            const targetZoom = tapZoomed ? 250 : 100;
+
+            // Trigger zoom native dengan cara ubah viewport sementara
+            // dan scroll ke posisi tap
+            applyCbzZoom(targetZoom);
+
+            if (!tapZoomed) {
+                // Reset scroll ke atas saat zoom out
+                container.scrollTo({ top: container.scrollTop, behavior: 'instant' });
+            }
+            lastTap = 0;
+        } else {
+            lastTap = now;
+        }
+    }, { passive: false });
+})();
+
+
 </script>
 </body>
 </html>
