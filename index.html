@@ -345,37 +345,6 @@
         }
 
         /* ===== DRAG & DROP OVERLAY ===== */
-        #drop-overlay {
-            display: none; position: fixed; inset: 0; z-index: 9000;
-            background: rgba(26,36,33,0.92);
-            align-items: center; justify-content: center;
-            flex-direction: column; gap: 16px;
-            pointer-events: none;
-        }
-        #drop-overlay.active {
-            display: flex;
-            pointer-events: auto;
-        }
-        .drop-icon  { font-size: 72px; animation: dropBounce 0.7s ease infinite alternate; }
-        @keyframes dropBounce {
-            from { transform: translateY(0); }
-            to   { transform: translateY(-12px); }
-        }
-        .drop-title {
-            font-family: 'Playfair Display', serif; font-size: 26px;
-            color: var(--leaf); font-weight: 700;
-        }
-        .drop-sub { font-size: 14px; color: var(--ivory-dim); }
-        .drop-border {
-            position: fixed; inset: 16px; border-radius: 20px;
-            border: 3px dashed var(--leaf);
-            pointer-events: none;
-            animation: dropPulse 1.2s ease infinite alternate;
-        }
-        @keyframes dropPulse {
-            from { border-color: var(--leaf); box-shadow: 0 0 0 0 rgba(142,182,149,0); }
-            to   { border-color: var(--leaf-light); box-shadow: 0 0 24px 4px rgba(142,182,149,0.15); }
-        }
 
         .viewer-header {
             display: flex; align-items: center; padding: 50px 10px 10px; gap: 6px;
@@ -1116,14 +1085,6 @@
 </div>
 
 <div id="leaves-container"></div>
-
-<!-- Drag & Drop Overlay -->
-<div id="drop-overlay">
-    <div class="drop-border"></div>
-    <div class="drop-icon">📂</div>
-    <div class="drop-title">Lepaskan untuk Menambahkan</div>
-    <div class="drop-sub">PDF · EPUB · Word · Gambar · Teks</div>
-</div>
 
 <!-- Drawer -->
 <div class="drawer-overlay" id="drawer-overlay" onclick="closeDrawer()"></div>
@@ -3049,80 +3010,6 @@ document.addEventListener('webkitfullscreenchange', updateFullscreenBtn);
 // ============================================================
 // DRAG & DROP
 // ============================================================
-(function initDragDrop() {
-    const overlay  = document.getElementById('drop-overlay');
-    let dragCounter = 0; // track enter/leave di child elements
-
-    // Hanya aktif kalau viewer sedang tutup (di library)
-    function isLibraryVisible() {
-        return !document.getElementById('viewer-screen').classList.contains('active');
-    }
-
-    document.addEventListener('dragenter', e => {
-        if (!isLibraryVisible()) return;
-        // Pastikan ada file (bukan drag teks/link)
-        if (!e.dataTransfer.types.includes('Files')) return;
-        e.preventDefault();
-        dragCounter++;
-        overlay.classList.add('active');
-    });
-
-    document.addEventListener('dragleave', e => {
-        if (!isLibraryVisible()) return;
-        dragCounter--;
-        if (dragCounter <= 0) {
-            dragCounter = 0;
-            overlay.classList.remove('active');
-        }
-    });
-
-    document.addEventListener('dragover', e => {
-        if (!isLibraryVisible()) return;
-        e.preventDefault();
-        e.dataTransfer.dropEffect = 'copy';
-    });
-
-    document.addEventListener('drop', async e => {
-        e.preventDefault();
-        dragCounter = 0;
-        overlay.classList.remove('active');
-        if (!isLibraryVisible()) return;
-
-        const files = Array.from(e.dataTransfer.files).filter(f => {
-            const ext = f.name.split('.').pop().toLowerCase();
-            return ['pdf','epub','docx','doc','jpg','jpeg','png','gif','webp',
-                    'bmp','svg','txt','md','js','ts','jsx','tsx','html','css',
-                    'json','xml','yaml','yml','py','java','cpp','c','cs','go',
-                    'rs','php','rb','sh','sql','vue','kt','swift'].includes(ext);
-        });
-
-        if (!files.length) { showToast('Format file tidak didukung'); return; }
-
-        showLoading(`Memproses ${files.length} file...`);
-        for (const file of files) {
-            try {
-                const ext   = file.name.split('.').pop().toLowerCase();
-                const cover = await generateCover(file, ext);
-                await addBookToDB({
-                    title:      file.name.replace(/\.[^.]+$/, ''),
-                    fileName:   file.name,
-                    ext,
-                    fileBlob:   file,
-                    coverImage: cover,
-                    progress:   0,
-                    lastPage:   1,
-                    lastCfi:    null,
-                    addedAt:    Date.now(),
-                    lastRead:   null
-                });
-            } catch(err) { console.error(err); }
-        }
-        hideLoading();
-        renderLibrary();
-        showToast(`${files.length} file berhasil ditambahkan 📚`);
-    });
-})();
-
 // ============================================================
 // PINCH TO ZOOM & DOUBLE TAP — CSS scale, NO re-render saat pinch
 // ============================================================
