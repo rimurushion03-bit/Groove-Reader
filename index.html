@@ -1258,6 +1258,7 @@
         <div class="viewer-title" id="viewer-title">Memuat...</div>
         <div class="viewer-page-info" id="viewer-page-info"></div>
         <button class="reader-settings-btn" onclick="toggleSearch()" title="Cari">🔍</button>
+        <button class="reader-settings-btn" id="epub-toc-btn" onclick="toggleEpubToc()" title="Daftar Isi" style="display:none">📑</button>
         <button class="reader-settings-btn" id="translate-btn" onclick="openTranslatePanel()" title="Terjemahkan">🌐</button>
         <button class="reader-settings-btn" id="fullscreen-btn" onclick="toggleFullscreen()" title="Layar Penuh">⛶</button>
         <button class="bookmark-btn" id="bookmark-btn" onclick="toggleBookmark()" title="Bookmark">🔖</button>
@@ -2354,6 +2355,35 @@ async function openEPUB(book, container, navBar) {
 
     document.getElementById('epub-prev').onclick = () => currentRendition.prev();
     document.getElementById('epub-next').onclick = () => currentRendition.next();
+
+    // Tampilkan tombol TOC
+    document.getElementById('epub-toc-btn').style.display = '';
+
+    // Populate TOC panel dari navigation epub
+    await reader.loaded.navigation;
+    const nav = reader.navigation;
+    const tocList = document.getElementById('word-toc-list');
+    tocList.innerHTML = '';
+    if (nav && nav.toc && nav.toc.length) {
+        function renderTocItems(items, depth) {
+            items.forEach(item => {
+                const el = document.createElement('div');
+                el.className = 'toc-item toc-h' + Math.min(depth, 3);
+                el.textContent = item.label.trim();
+                el.onclick = () => {
+                    currentRendition.display(item.href).catch(() => {});
+                    tocList.querySelectorAll('.toc-item').forEach(i => i.classList.remove('active'));
+                    el.classList.add('active');
+                    closeWordToc();
+                };
+                tocList.appendChild(el);
+                if (item.subitems && item.subitems.length) renderTocItems(item.subitems, depth + 1);
+            });
+        }
+        renderTocItems(nav.toc, 1);
+    } else {
+        tocList.innerHTML = '<div class="toc-empty">Tidak ada daftar isi ditemukan.</div>';
+    }
 }
 
 // ============================================================
@@ -2381,6 +2411,7 @@ async function closeViewer() {
     currentFileType = null;
     document.getElementById('word-toolbar').classList.remove('visible');
     document.getElementById('word-toc-panel').classList.remove('open');
+    document.getElementById('epub-toc-btn').style.display = 'none';
     document.getElementById('cbz-toolbar').classList.remove('visible');
     // Kembalikan viewport ke no-zoom setelah keluar dari CBZ
     document.querySelector('meta[name="viewport"]').setAttribute('content',
@@ -2717,9 +2748,23 @@ function toggleWordToc() {
     }
 }
 
+function toggleEpubToc() {
+    const panel = document.getElementById('word-toc-panel');
+    const btn   = document.getElementById('epub-toc-btn');
+    const isOpen = panel.classList.contains('open');
+    if (isOpen) {
+        panel.classList.remove('open');
+        btn.classList.remove('active');
+    } else {
+        panel.classList.add('open');
+        btn.classList.add('active');
+    }
+}
+
 function closeWordToc() {
     document.getElementById('word-toc-panel').classList.remove('open');
     document.getElementById('word-toc-btn').classList.remove('active');
+    document.getElementById('epub-toc-btn').classList.remove('active');
 }
 
 // ---- Progress tracking ----
